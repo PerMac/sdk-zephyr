@@ -3,7 +3,7 @@ name: Native 64-bit POSIX port
 type: native
 arch: posix
 toolchain:
-  - zephyr
+  - host
   - llvm
 supported:
   - eeprom
