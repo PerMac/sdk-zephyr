@@ -38,6 +38,16 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          
+      - name: Set repo directory
+        run: |
+          # fix for the directory name (nrfconnect repo specific)
+          current_dir=${PWD##*/}
+          if [ ${current_dir} != "zephyr" ]
+          then
+             echo "curr dir ${current_dir} was not equal to zephyr"
+             mv ../${current_dir} ../zephyr
+          fi
 
       - name: west setup
         run: |
