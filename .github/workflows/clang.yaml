@@ -1,6 +1,6 @@
 name: Build with Clang/LLVM
 
-on: pull_request_target
+on: pull_request
 
 jobs:
   clang-build-cancel:
