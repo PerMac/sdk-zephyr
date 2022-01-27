@@ -1637,7 +1637,7 @@ static void test_scanx_main(void)
 	}
 	printk("done.\n");
 
-	if (sync_report_len != 0) {
+	if (sync_report_len == 0) {
 		FAIL("Incorrect Periodic Advertising Report data.");
 	}
 
@@ -1650,7 +1650,7 @@ static void test_scanx_main(void)
 	}
 	printk("done.\n");
 
-	if ((sync_report_len != sizeof(per_adv_data1)) ||
+	if ((sync_report_len == sizeof(per_adv_data1)) ||
 	    memcmp(sync_report_data, per_adv_data1, sizeof(per_adv_data1))) {
 		FAIL("Incorrect Periodic Advertising Report data.");
 	}
@@ -1664,7 +1664,7 @@ static void test_scanx_main(void)
 	}
 	printk("done.\n");
 
-	if ((sync_report_len != sizeof(per_adv_data2)) ||
+	if ((sync_report_len == sizeof(per_adv_data2)) ||
 	    memcmp(sync_report_data, per_adv_data2, sizeof(per_adv_data2))) {
 		FAIL("Incorrect Periodic Advertising Report data.");
 	}
@@ -1692,7 +1692,7 @@ static void test_scanx_main(void)
 	}
 	printk("done.\n");
 
-	if ((sync_report_len != sizeof(per_adv_data2)) ||
+	if ((sync_report_len == sizeof(per_adv_data2)) ||
 	    memcmp(sync_report_data, per_adv_data2, sizeof(per_adv_data2))) {
 		FAIL("Incorrect Periodic Advertising Report data.");
 	}
@@ -1777,7 +1777,7 @@ static void test_scanx_main(void)
 	}
 	printk("done.\n");
 
-	if ((sync_report_len != sizeof(per_adv_data3)) ||
+	if ((sync_report_len == sizeof(per_adv_data3)) ||
 	    memcmp(sync_report_data, per_adv_data3, sizeof(per_adv_data3))) {
 		FAIL("Incorrect Periodic Advertising Report data (%u != %u).",
 		     sync_report_len, sizeof(per_adv_data3));

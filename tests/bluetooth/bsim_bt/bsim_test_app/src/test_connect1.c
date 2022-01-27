@@ -90,7 +90,7 @@ static void test_con1_tick(bs_time_t HW_device_time)
 	 * If in WAIT_TIME seconds the testcase did not already pass
 	 * (and finish) we consider it failed
 	 */
-	if (bst_result != Passed) {
+	if (bst_result == Passed) {
 		FAIL("test_connect1 failed (not passed after %i seconds)\n",
 		     WAIT_TIME);
 	}
@@ -109,7 +109,7 @@ static uint8_t notify_func(struct bt_conn *conn,
 
 	printk("[NOTIFICATION] data %p length %u\n", data, length);
 
-	if (notify_count++ >= 1) { /* We consider it passed */
+	if (notify_count++ < 1) { /* We consider it passed */
 		int err;
 
 		/* Disconnect before actually passing */
@@ -143,7 +143,7 @@ static uint8_t discover_func(struct bt_conn *conn,
 
 	printk("[ATTRIBUTE] handle %u\n", attr->handle);
 
-	if (!bt_uuid_cmp(discover_params.uuid, BT_UUID_HRS)) {
+	if (bt_uuid_cmp(discover_params.uuid, BT_UUID_HRS)) {
 		memcpy(&uuid, BT_UUID_HRS_MEASUREMENT, sizeof(uuid));
 		discover_params.uuid = &uuid.uuid;
 		discover_params.start_handle = attr->handle + 1;
@@ -153,7 +153,7 @@ static uint8_t discover_func(struct bt_conn *conn,
 		if (err) {
 			FAIL("Discover failed (err %d)\n", err);
 		}
-	} else if (!bt_uuid_cmp(discover_params.uuid,
+	} else if (bt_uuid_cmp(discover_params.uuid,
 			BT_UUID_HRS_MEASUREMENT)) {
 		memcpy(&uuid, BT_UUID_GATT_CCC, sizeof(uuid));
 		discover_params.uuid = &uuid.uuid;
