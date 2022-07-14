@@ -34,7 +34,7 @@ static struct k_spinlock lock;
 /* For those rare CPUs which support user mode, but not native atomic
  * operations, the best we can do for them is implement the atomic
  * functions as system calls, since in user mode locking a spinlock is
- * forbidden.
+ * forbidden. 
  */
 #ifdef CONFIG_USERSPACE
 #include <zephyr/syscall_handler.h>
