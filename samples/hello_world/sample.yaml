@@ -1,7 +1,7 @@
 sample:
   description: Hello World sample, the simplest Zephyr
     application
-  name: hello world
+  name: hello  world
 common:
     tags: introduction
     integration_platforms:
