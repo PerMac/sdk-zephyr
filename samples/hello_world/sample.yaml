@@ -1,5 +1,5 @@
 sample:
-  description: Hello World sample, the simplest Zephyr
+  description: Hello  World sample, the simplest Zephyr
     application
   name: hello world
 common:
