@@ -271,6 +271,11 @@ class TestPlan:
             start = ((subset - num_extra_sets - 1) * per_set) + base
             end = start + per_set
 
+        print(f"SUBSET START {start} END {end} TOTAL {total}")
+        with open(f'total_to_run_{subset}.txt', 'w') as f_tot:
+            for key in to_run.keys():
+                f_tot.write(f"{str(key)}\n")
+
         sliced_instances = islice(to_run.items(), start, end)
         skipped = {k : v for k,v in self.instances.items() if v.status == 'skipped'}
         errors = {k : v for k,v in self.instances.items() if v.status == 'error'}
@@ -280,6 +285,10 @@ class TestPlan:
             # to the first set to allow for better distribution among all sets.
             self.instances.update(skipped)
             self.instances.update(errors)
+
+        with open(f'subset_to_run_{subset}.txt', 'w') as f_sub:
+            for key in self.instances.keys():
+                f_sub.write(f"{str(key)}\n")
 
 
     def handle_modules(self):
@@ -673,10 +682,8 @@ class TestPlan:
                 b = set(filter(lambda item: item.name in ts.platform_allow, self.platforms))
                 c = a.intersection(b)
                 if not c:
-                    _platform_scope = list(filter(lambda item: item.name in ts.platform_allow, \
+                    platform_scope = list(filter(lambda item: item.name in ts.platform_allow, \
                                              self.platforms))
-                    if len(_platform_scope) > 0:
-                        platform_scope = _platform_scope[:1]
 
 
             # list of instances per testsuite, aka configurations.
