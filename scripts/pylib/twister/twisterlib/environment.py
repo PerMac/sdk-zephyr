@@ -299,9 +299,8 @@ structure in the main Zephyr tree: boards/<arch>/<board_name>/""")
 
     parser.add_argument("--coverage-formats", action="store", default=None, # default behavior is set in run_coverage
                         help="Output formats to use for generated coverage reports, as a comma-separated list. "
-                             "Only used in conjunction with gcovr. "
                              "Default to html. "
-                             "Valid options are html, xml, csv, txt, coveralls, sonarqube.")
+                             "Valid options are html, xml, csv, txt, coveralls, sonarqube, lcov.")
 
     parser.add_argument("--test-config", action="store", default=os.path.join(ZEPHYR_BASE, "tests", "test_config.yaml"),
         help="Path to file with plans and test configurations.")
@@ -459,6 +458,10 @@ structure in the main Zephyr tree: boards/<arch>/<board_name>/""")
              "The '--clobber-output' option controls what cleaning does.")
 
     parser.add_argument(
+        "--report-summary", action="store_true",
+        help="Show failed/error report from latest run")
+
+    parser.add_argument(
         "-o", "--report-dir",
         help="""Output reports containing results of the test run into the
         specified directory.
@@ -469,6 +472,8 @@ structure in the main Zephyr tree: boards/<arch>/<board_name>/""")
     parser.add_argument("--overflow-as-errors", action="store_true",
                         help="Treat RAM/SRAM overflows as errors.")
 
+    parser.add_argument("--report-filtered", action="store_true",
+                        help="Report filtered tests.")
 
     parser.add_argument("-P", "--exclude-platform", action="append", default=[],
             help="""Exclude platforms and do not build or run any tests
@@ -553,8 +558,14 @@ structure in the main Zephyr tree: boards/<arch>/<board_name>/""")
 
     parser.add_argument(
         "-S", "--enable-slow", action="store_true",
+        default="--enable-slow-only" in sys.argv,
         help="Execute time-consuming test cases that have been marked "
              "as 'slow' in testcase.yaml. Normally these are only built.")
+
+    parser.add_argument(
+        "--enable-slow-only", action="store_true",
+        help="Execute time-consuming test cases that have been marked "
+             "as 'slow' in testcase.yaml only. This also set the option --enable-slow")
 
     parser.add_argument(
         "--seed", type=int,
@@ -723,12 +734,8 @@ def parse_arguments(parser, args, options = None):
                         only one platform is allowed""")
         sys.exit(1)
 
-    if options.device_flash_timeout and options.device_testing is None:
-        logger.error("--device-flash-timeout requires --device-testing")
-        sys.exit(1)
-
-    if options.device_flash_with_test and options.device_testing is None:
-        logger.error("--device-flash-with-test requires --device-testing")
+    if options.device_flash_with_test and not options.device_testing:
+        logger.error("--device-flash-with-test requires --device_testing")
         sys.exit(1)
 
     if options.shuffle_tests and options.subset is None:
@@ -739,17 +746,12 @@ def parse_arguments(parser, args, options = None):
         logger.error("--shuffle-tests-seed requires --shuffle-tests")
         sys.exit(1)
 
-    if options.coverage_formats and (options.coverage_tool != "gcovr"):
-        logger.error("""--coverage-formats can only be used when coverage
-                        tool is set to gcovr""")
-        sys.exit(1)
-
     if options.size:
         from twisterlib.size_calc import SizeCalculator
         for fn in options.size:
             sc = SizeCalculator(fn, [])
             sc.size_report()
-        sys.exit(1)
+        sys.exit(0)
 
     if len(options.extra_test_args) > 0:
         # extra_test_args is a list of CLI args that Twister did not recognize
@@ -795,6 +797,7 @@ class TwisterEnv:
         self.commit_date = None
         self.run_date = None
         self.options = options
+
         if options and options.ninja:
             self.generator_cmd = "ninja"
             self.generator = "Ninja"
@@ -803,10 +806,8 @@ class TwisterEnv:
             self.generator = "Unix Makefiles"
         logger.info(f"Using {self.generator}..")
 
-        if options:
-            self.test_roots = options.testsuite_root
-        else:
-            self.test_roots = None
+        self.test_roots = options.testsuite_root if options else None
+
         if options:
             if not isinstance(options.board_root, list):
                 self.board_roots = [self.options.board_root]
@@ -819,9 +820,9 @@ class TwisterEnv:
 
         self.hwm = None
 
-        self.test_config = options.test_config
+        self.test_config = options.test_config if options else None
 
-        self.alt_config_root = options.alt_config_root
+        self.alt_config_root = options.alt_config_root if options else None
 
     def discover(self):
         self.check_zephyr_version()
@@ -841,7 +842,7 @@ class TwisterEnv:
                     logger.info(f"Zephyr version: {self.version}")
                 else:
                     self.version = "Unknown"
-                    logger.error("Coult not determine version")
+                    logger.error("Could not determine version")
         except OSError:
             logger.info("Cannot read zephyr version.")
 
@@ -887,7 +888,7 @@ class TwisterEnv:
         out = ansi_escape.sub('', out.decode())
 
         if p.returncode == 0:
-            msg = "Finished running  %s" % (args[0])
+            msg = "Finished running %s" % (args[0])
             logger.debug(msg)
             results = {"returncode": p.returncode, "msg": msg, "stdout": out}
 

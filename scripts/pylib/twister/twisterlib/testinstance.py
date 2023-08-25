@@ -3,7 +3,7 @@
 # Copyright (c) 2018-2022 Intel Corporation
 # Copyright 2022 NXP
 # SPDX-License-Identifier: Apache-2.0
-
+from __future__ import annotations
 import os
 import hashlib
 import random
@@ -11,11 +11,20 @@ import logging
 import shutil
 import glob
 
-from twisterlib.testsuite import TestCase
+from twisterlib.testsuite import TestCase, TestSuite
+from twisterlib.platform import Platform
 from twisterlib.error import BuildError
 from twisterlib.size_calc import SizeCalculator
-from twisterlib.handlers import Handler, SimulationHandler, BinaryHandler, QEMUHandler, DeviceHandler, SUPPORTED_SIMS
-from twisterlib.harness import SUPPORTED_SIMS_IN_PYTEST
+from twisterlib.handlers import (
+    Handler,
+    SimulationHandler,
+    BinaryHandler,
+    QEMUHandler,
+    DeviceHandler,
+    SUPPORTED_SIMS,
+    SUPPORTED_SIMS_IN_PYTEST,
+)
+from twisterlib.testsuite import Status
 
 logger = logging.getLogger('twister')
 logger.setLevel(logging.DEBUG)
@@ -33,10 +42,10 @@ class TestInstance:
 
     def __init__(self, testsuite, platform, outdir):
 
-        self.testsuite = testsuite
-        self.platform = platform
+        self.testsuite: TestSuite = testsuite
+        self.platform: Platform = platform
 
-        self.status = None
+        self.status = Status.NOTRUN
         self.reason = "Unknown"
         self.metrics = dict()
         self.handler = None
@@ -51,14 +60,14 @@ class TestInstance:
         self.domains = None
 
         self.run = False
-        self.testcases = []
+        self.testcases: list[TestCase] = []
         self.init_cases()
         self.filters = []
         self.filter_type = None
 
     def add_filter(self, reason, filter_type):
         self.filters.append({'type': filter_type, 'reason': reason })
-        self.status = "filtered"
+        self.status = Status.FILTER
         self.reason = reason
         self.filter_type = filter_type
 
@@ -78,8 +87,8 @@ class TestInstance:
 
     def add_missing_case_status(self, status, reason=None):
         for case in self.testcases:
-            if case.status == 'started':
-                case.status = "failed"
+            if case.status == Status.INPROGRESS:
+                case.status = Status.FAIL
             elif not case.status:
                 case.status = status
                 if reason:
@@ -282,15 +291,17 @@ class TestInstance:
             build_dir = self.build_dir
 
         fns = glob.glob(os.path.join(build_dir, "zephyr", "*.elf"))
-        fns.extend(glob.glob(os.path.join(build_dir, "zephyr", "*.exe")))
         fns.extend(glob.glob(os.path.join(build_dir, "testbinary")))
         blocklist = [
                 'remapped', # used for xtensa plaforms
                 'zefi', # EFI for Zephyr
-                '_pre' ]
+                'qemu', # elf files generated after running in qemu
+                '_pre']
         fns = [x for x in fns if not any(bad in os.path.basename(x) for bad in blocklist)]
-        if len(fns) != 1 and self.platform.type != 'native':
-            raise BuildError("Missing/multiple output ELF binary")
+        if not fns:
+            raise BuildError("Missing output binary")
+        elif len(fns) > 1:
+            logger.warning(f"multiple ELF files detected: {', '.join(fns)}")
         return fns[0]
 
     def get_buildlog_file(self) -> str:
